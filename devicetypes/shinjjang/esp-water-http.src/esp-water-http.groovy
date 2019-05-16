@@ -319,48 +319,6 @@ def averageReset() {
 
 
 
-def resetMinMax() {	
-	def currentTemp = device.currentValue('temperature')
-	def currentCo = device.currentValue('carbonDioxide')
-    currentTemp = currentTemp ? (int) currentTemp : currentTemp
-	log.debug "${device.displayName}: Resetting daily min/max values to current temperature of ${currentTemp}° and humidity of ${currentCo}%"
-    sendEvent(name: "maxTemp", value: currentTemp)
-    sendEvent(name: "minTemp", value: currentTemp)
-    sendEvent(name: "maxCo", value: currentCo)
-    sendEvent(name: "minCo", value: currentCo)
-}
-
-
-def updateMinMaxTemps(temp) {
-	def ttime = new Date().format("a hh:mm", location.timeZone)
-	if ((temp > device.currentValue('maxTemp')) || (device.currentValue('maxTemp') == null)){
-		sendEvent(name: "maxTemp", value: temp)	
-		sendEvent(name: "maxTempTime", value: ttime)	
-	} else if ((temp < device.currentValue('minTemp')) || (device.currentValue('minTemp') == null)){
-		sendEvent(name: "minTemp", value: temp)
-		sendEvent(name: "minTempTime", value: ttime)
-    }
-}
-
-def updateMinMaxCo(co) {
-	def ttime = new Date().format("a hh:mm", location.timeZone)
-    def hk = state.homekit as int
-    if ( co >= hk ) {
-    	sendEvent(name: "carbonDioxideSet", value: "high", displayed: false)
-        log.debug "homekitarm 'high'"
-    } else {
-    	sendEvent(name: "carbonDioxideSet", value: "normal", displayed: false)
-        log.debug "homekitarm 'normal'"
-    }
-
-	if ((co > device.currentValue('maxCo')) || (device.currentValue('maxCo') == null)){
-		sendEvent(name: "maxCo", value: co)
-		sendEvent(name: "maxCoTime", value: ttime)	
-	} else if ((co < device.currentValue('minCo')) || (device.currentValue('minCo') == null)){
-		sendEvent(name: "minCo", value: co)
-		sendEvent(name: "minCoTime", value: ttime)
-    }
-}
 
 def refresh() {
 }
@@ -393,30 +351,7 @@ def parse(String description) {
        state.distance = result.Distance as int
        averageWater(state.distance)
     }
-
-    if (result.containsKey("CO2")) {
-       state.carbonDioxide = result.CO2 as int
-       updateMinMaxCo(state.carbonDioxide)
-       events << createEvent(name:"carbonDioxide", value: state.carbonDioxide, unit: "ppm" )
-    }
-    if (result.containsKey("U")) {
-    }
-    if (result.containsKey("Temperature")) {
-	   	state.temperature = result.Temperature
-     	updateMinMaxTemps(state.temperature)
-       	events << createEvent(name:"temperature", value: state.temperature, unit: "C")
-    }
-    if (result.containsKey("Lux")) {
-		state.light = result.Lux
-		events << createEvent(name:"illuminance", value: state.light, unit: "lux")
-    }
-    if (result.containsKey("Infrared")) {
-		events << createEvent(name:"infraredIndex", value:result.Infrared)
-    }
-    if (result.containsKey("Broadband")) {
-		events << createEvent(name:"broadband", value:result.Broadband)
-    }
-    
+  
     	def nowk = new Date().format("yyyy-MM-dd HH:mm:ss", location.timeZone)
         def now = new Date()
         state.lastTime = now.getTime()
