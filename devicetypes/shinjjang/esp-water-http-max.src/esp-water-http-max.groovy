@@ -48,10 +48,13 @@ metadata {
         attribute "w5_value", "number"
         attribute "w6_value", "number"
         attribute "distance", "number"
+
         attribute "lastCheckinDate", "date"
 
         command "refresh"
+
     }
+
 
     simulator {
     }
@@ -144,6 +147,7 @@ metadata {
             state "default", label: '새로고침'
         }
 
+
         main(["main"])
         details(["main", "waterVolume_label", "waterHeight_label", "distance_label",
             "waterVolume", "waterHeight", "distance",
@@ -152,6 +156,7 @@ metadata {
         ])
     }
 }
+
 
 def updated() {
     log.debug "URL >> ${url}"
@@ -224,6 +229,7 @@ def pollWaterAverage() {
     sendEvent(name: "waterHeight", value: state.wHeight as int, unit: "cm")
     sendEvent(name: "battery", value: state.amount as int, unit: "%")
     sendEvent(name: "humidity", value: state.amount as int, unit: "%")
+
 }
 
 def averageReset() {
