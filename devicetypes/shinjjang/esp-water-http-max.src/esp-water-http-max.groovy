@@ -32,7 +32,7 @@ import groovy.transform.Field
 
 
 metadata {
-	definition (name: "ESP WATER HTTP", namespace: "ShinJjang", author: "ShinJjang") {
+	definition (name: "ESP WATER HTTP Max", namespace: "ShinJjang", author: "ShinJjang") {
         capability "Sensor"
 		capability "Relative Humidity Measurement"
 		capability "Battery"
@@ -48,23 +48,15 @@ metadata {
 		attribute "w5_value", "number"
 		attribute "w6_value", "number"
 		attribute "distance", "number"
-		attribute "maxLux", "number"
-		attribute "minLux", "number"
-		attribute "maxTemp", "number"
-		attribute "minTemp", "number"
-		attribute "maxCo", "number"
-		attribute "minCo", "number"
+		
 	    attribute "lastCheckinDate", "date"
-		attribute "carbonDioxideSet", "string"               
+		      
 	    command "setData"
 	    command "refresh"
         command "timerLoop"
-        command "averageCo"
-        command "updateMinMaxTemps"
-        command "updateMinMaxCo"
+        
 		command	"checkNewDay"
-        command "checkPPM"
-        command "ledOnsec"
+        
 
 	}
 
@@ -175,22 +167,7 @@ def updated() {
     log.debug "URL >> ${url}"
 	state.address = url
     state.lastTime = new Date().getTime()
-//    state.averageNumber = averageNumber as int
-//    state.homekit = homekitSet
     averageReset()
-}
-
-def checkNewDay() {
-	def now = new Date().format("yyyy-MM-dd", location.timeZone)
-	if(state.prvDate == null){
-		state.prvDate = now
-	}else{
-		if(state.prvDate != now){
-			state.prvDate = now
-			    log.debug "checkNewDay _ ${state.prvDate}"
-			resetMinMax()            
-		}
-	}
 }
 
 def averageWater(distance) {
@@ -203,69 +180,38 @@ def averageWater(distance) {
     	state.w2 = cm
         if( state.w1 >= state.w2) {
         state.maxD = state.w1
-        state.minD = state.w2
-        state.minD2 = state.w1
         } else {
         state.maxD = state.w2
-        state.minD = state.w1
-        state.minD2 = state.w2
         }
-    log.debug "1 Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2}"        
-//        max1 = max(state.w1, state.w2) as int
-//        min1 = min(state.w1, state.w2) as int
+    log.debug "1 Max: ${state.maxD}"        
     sendEvent(name: "w2_value", value: state.w2)
 	} else if(state.w3 == 0) {
     	state.w3 = cm
         if( state.w3 > state.maxD) {
         state.maxD = state.w3
         } 
-        else if ( state.w3 < state.minD2) {
-        	if( state.w3 < state.minD) {
-        		state.minD = state.w3
-        	} else {state.minD2 = state.w3
-        	}
-        }
-    log.debug "2 Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2}"        
-
+    log.debug "2 Max: ${state.maxD}"        
     sendEvent(name: "w3_value", value: state.w3)
 	} else if(state.w4 == 0) {
     	state.w4 = cm
         if( state.w4 > state.maxD) {
         state.maxD = state.w4
         } 
-        else if ( state.w4 < state.minD2) {
-        	if( state.w4 < state.minD) {
-        		state.minD = state.w4
-        	} else {state.minD2 = state.w4
-        	}
-        }
-    log.debug "3 Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2}"        
+    log.debug "3 Max: ${state.maxD}"        
     sendEvent(name: "w4_value", value: state.w4)
 	} else if(state.w5 == 0) {
     	state.w5 = cm
         if( state.w5 > state.maxD) {
         state.maxD = state.w5
         } 
-        else if ( state.w5 < state.minD2) {
-        	if( state.w5 < state.minD) {
-        		state.minD = state.w5
-        	} else {state.minD2 = state.w5
-        	}
-        }
-    log.debug "4 Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2}"        
+    log.debug "4 Max: ${state.maxD}"        
     sendEvent(name: "w5_value", value: state.w5)
 	} else if(state.w6 == 0) {
     	state.w6 = cm
         if( state.w6 > state.maxD) {
         state.maxD = state.w6
         } 
-        else if ( state.w6 < state.minD2) {
-        	if( state.w6 < state.minD) {
-        		state.minD = state.w6
-        	} else {state.minD2 = state.w6
-        	}
-        }
-    log.debug "5 Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2}"        
+    log.debug "5 Max: ${state.maxD}"        
     sendEvent(name: "w6_value", value: state.w6)
 			pollWaterAverage()
 			averageReset()
@@ -276,37 +222,22 @@ def averageWater(distance) {
 }       
 
 def pollWaterAverage() {
-	log.debug "Wateraverage start( ${state.w1}, ${state.w2}, ${state.w3}, ${state.w4}, ${state.w5}, ${state.w6}, Max: ${state.maxD}, Min: ${state.minD}, Min2: ${state.minD2})"
-//    maxDis = Math.max(32, 32, 35, 35, 31, 30)
-//    maxDis = Math.max(state.w1, state.w2, state.w3, state.w4, state.w5, state.w6)
-//    maxDis = Math.max(state.w1 as int, state.w2 as int, state.w3 as int, state.w4 as int, state.w5 as int, state.w6 as int)
-//    log.debug "Max Water ${maxDis}"
-	state.averageDis = (state.w1 + state.w2 + state.w3 + state.w4 + state.w5 + state.w6 - state.maxD - state.minD - state.minD2)/3
-    log.debug "Wateraverage Dis result: ${state.averageDis}"
+	log.debug "WateraverageMAX start(Max: ${state.maxD})"
        sendEvent(name:"distance", value: state.maxD, unit: "cm" )
        state.wHeight = waterDepthMax - state.maxD
        state.amount = (waterDepthMax - state.maxD)/(waterDepthMax - waterDepthMin)*100
        state.wVolume = tankW * tankD * state.amount /1000
 		log.debug "Average Distance: ${state.maxD} Amount: ${state.amount}"
 
-/*       state.wHeight = waterDepthMax - state.averageDis
-       state.amount = (waterDepthMax - state.averageDis)/(waterDepthMax - waterDepthMin)*100
-       state.wVolume = tankW * tankD * state.amount /1000
-		log.debug "Average Distance: ${state.averageDis} Amount: ${state.amount}"  */
-       sendEvent(name:"waterLevel", value: state.amount )
+       sendEvent(name:"waterLevel", value: state.amount as int )
        sendEvent(name:"waterVolume", value: state.wVolume as int)
        sendEvent(name:"waterHeight", value: state.wHeight as int, unit: "cm" )
        sendEvent(name:"battery", value: state.amount as int, unit: "%" )
        sendEvent(name:"humidity", value: state.amount as int, unit: "%" )
-
     
-//    log.debug "CO2average = ${state.averageCo},( ${state.co1}, ${state.co2}, ${state.co3}, ${state.co4}, ${state.co5}, ${state.co6}, ${state.co7}, ${state.co8}, ${state.co9}, ${state.co10},/ ${state.averageNumber})"
-//    pollco()
-//    pollcoubi()
 }
 
 def averageReset() {
-	log.debug "Wateraverage reset"
 	state.w1 = 0
 	state.w2 = 0
 	state.w3 = 0
@@ -315,51 +246,7 @@ def averageReset() {
 	state.w6 = 0
     state.maxD = 0
     state.minD = 0
-}
-
-
-
-def resetMinMax() {	
-	def currentTemp = device.currentValue('temperature')
-	def currentCo = device.currentValue('carbonDioxide')
-    currentTemp = currentTemp ? (int) currentTemp : currentTemp
-	log.debug "${device.displayName}: Resetting daily min/max values to current temperature of ${currentTemp}° and humidity of ${currentCo}%"
-    sendEvent(name: "maxTemp", value: currentTemp)
-    sendEvent(name: "minTemp", value: currentTemp)
-    sendEvent(name: "maxCo", value: currentCo)
-    sendEvent(name: "minCo", value: currentCo)
-}
-
-
-def updateMinMaxTemps(temp) {
-	def ttime = new Date().format("a hh:mm", location.timeZone)
-	if ((temp > device.currentValue('maxTemp')) || (device.currentValue('maxTemp') == null)){
-		sendEvent(name: "maxTemp", value: temp)	
-		sendEvent(name: "maxTempTime", value: ttime)	
-	} else if ((temp < device.currentValue('minTemp')) || (device.currentValue('minTemp') == null)){
-		sendEvent(name: "minTemp", value: temp)
-		sendEvent(name: "minTempTime", value: ttime)
-    }
-}
-
-def updateMinMaxCo(co) {
-	def ttime = new Date().format("a hh:mm", location.timeZone)
-    def hk = state.homekit as int
-    if ( co >= hk ) {
-    	sendEvent(name: "carbonDioxideSet", value: "high", displayed: false)
-        log.debug "homekitarm 'high'"
-    } else {
-    	sendEvent(name: "carbonDioxideSet", value: "normal", displayed: false)
-        log.debug "homekitarm 'normal'"
-    }
-
-	if ((co > device.currentValue('maxCo')) || (device.currentValue('maxCo') == null)){
-		sendEvent(name: "maxCo", value: co)
-		sendEvent(name: "maxCoTime", value: ttime)	
-	} else if ((co < device.currentValue('minCo')) || (device.currentValue('minCo') == null)){
-		sendEvent(name: "minCo", value: co)
-		sendEvent(name: "minCoTime", value: ttime)
-    }
+    log.debug "Wateraverage reset"
 }
 
 def refresh() {
@@ -368,60 +255,21 @@ def refresh() {
 def parse(String description) {
     def events = []
 
-    log.debug "Parsing '${description}'"
     def msg = parseLanMessage(description)
-    log.debug "headers ${msg.headers}"
-    log.debug "header ${msg.header}"
-//    log.debug "json ${msg.json}"
-//    log.debug "status ${msg.status}"
-//    log.debug "data ${msg.data}"
-//    log.debug "body ${msg.body}"
-
-    
     def desc = msg.header.toString()
-	log.debug "def: descr ${desc}"
-
-//	def descr = desc.split("&")[1]
-//	log.debug "def: descr1 ${descr}"
-
-
+	def descr = desc.split("&")[1]
     def slurper = new JsonSlurper()
-    def result = slurper.parseText(desc)
-    log.debug "def: descr3 ${result}"
-    
+    def result = slurper.parseText(descr)
+    log.debug "ESP Value : ${result}"
     if (result.containsKey("Distance")) {
        state.distance = result.Distance as int
        averageWater(state.distance)
     }
-
-    if (result.containsKey("CO2")) {
-       state.carbonDioxide = result.CO2 as int
-       updateMinMaxCo(state.carbonDioxide)
-       events << createEvent(name:"carbonDioxide", value: state.carbonDioxide, unit: "ppm" )
-    }
-    if (result.containsKey("U")) {
-    }
-    if (result.containsKey("Temperature")) {
-	   	state.temperature = result.Temperature
-     	updateMinMaxTemps(state.temperature)
-       	events << createEvent(name:"temperature", value: state.temperature, unit: "C")
-    }
-    if (result.containsKey("Lux")) {
-		state.light = result.Lux
-		events << createEvent(name:"illuminance", value: state.light, unit: "lux")
-    }
-    if (result.containsKey("Infrared")) {
-		events << createEvent(name:"infraredIndex", value:result.Infrared)
-    }
-    if (result.containsKey("Broadband")) {
-		events << createEvent(name:"broadband", value:result.Broadband)
-    }
-    
+  
     	def nowk = new Date().format("yyyy-MM-dd HH:mm:ss", location.timeZone)
         def now = new Date()
         state.lastTime = now.getTime()
         sendEvent(name: "lastCheckin", value: nowk)
-        checkNewDay()
 
     return events    
 }
